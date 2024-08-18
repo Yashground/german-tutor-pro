@@ -42,7 +42,7 @@ async function submitUserMessage(content: string) {
 
   // Call OpenAI API to get the assistant's response
   const result = await streamUI({
-    model: openai('gpt-4-mini'), // Use the appropriate model, gpt-4-mini or whatever is required
+    model: openai('gpt-4o-mini'), // Use the appropriate model, gpt-4-mini or whatever is required
     
     initial: <SpinnerMessage />,
     system: `\
