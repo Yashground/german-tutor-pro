@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { Chat, Message } from '@/lib/types';
 import { auth } from '@/auth';
 import { saveChat } from '@/app/actions';
-import { SpinnerMessage, UserMessage, BotMessage } from '@/components/chat/message';
+import { SpinnerMessage, UserMessage, BotMessage } from '@/components/stocks/message';
 
 async function submitUserMessage(content: string) {
   'use server';
