@@ -5,8 +5,23 @@ from fastapi import FastAPI, HTTPException, Body
 from fastapi.concurrency import asynccontextmanager
 import httpx
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "Hello World, your FastAPI backend is up and running!"}
+
+
+# Set up CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://german-tutor-8wzhvrdo2-yashgrounds-projects.vercel.app"],  # Restrict to your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 class Message(BaseModel):
     role: str
@@ -17,6 +32,7 @@ class Message(BaseModel):
 ASSISTANT_ID = os.getenv("ASSISTANT_ID", "asst_skwyet59AD0Dk1GtpweGMNBO")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
 BASE_URL = "https://api.openai.com/v1/"
+
 
 async def create_thread():
     async with httpx.AsyncClient() as client:
