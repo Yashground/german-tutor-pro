@@ -120,11 +120,7 @@ async def chat(role: str = Body(...), content: str = Body(...), thread_id: str =
         if not thread_id:
             thread_data = await create_thread()
             thread_id = thread_data['id']
-        else:
-            thread_id = thread_id
         
-        print(f"Thread ID being used: {thread_id}")
-
         # Add the user's initial message to the thread
         await add_message_to_thread(thread_id, role, content)
         
@@ -138,21 +134,18 @@ async def chat(role: str = Body(...), content: str = Body(...), thread_id: str =
         
         # Retrieve and format the assistant's response
         response_data = await get_response_messages(thread_id)
-        formatted_response = {
-            "thread_id": thread_id,
-            "messages": []
-        }
+        formatted_response = ""
 
         for message in response_data['data']:
             if message['role'] == 'assistant':
                 for content_item in message['content']:
                     if content_item['type'] == 'text':
-                        formatted_response['messages'].append({
-                            "role": message['role'],
-                            "text": content_item['text']['value']
-                        })
+                        formatted_response += content_item['text']['value'] + "\n\n"
 
-        return formatted_response
+        # Remove the trailing line breaks
+        formatted_response = formatted_response.strip()
+
+        return {"message": formatted_response}
     except Exception as e:
         print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
