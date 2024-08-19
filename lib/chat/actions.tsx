@@ -1,5 +1,4 @@
 import 'server-only';
-
 import {
   createAI,
   createStreamableUI,
@@ -14,18 +13,19 @@ import { saveChat } from '@/app/actions';
 import { SpinnerMessage, UserMessage, BotMessage } from '@/components/stocks/message';
 import { nanoid } from 'nanoid';
 
+// Function to handle submission of a user's message to the FastAPI backend
 async function submitUserMessage(content: string) {
   'use server';
 
   const aiState = getMutableAIState<typeof AI>();
 
-  // Add the user's message to the chat state
+  // Add the user's message to the current chat state
   aiState.update({
     ...aiState.get(),
     messages: [
       ...aiState.get().messages,
       {
-        id: nanoid(), // This will now correctly generate a unique ID
+        id: nanoid(),
         role: 'user',
         content,
       },
@@ -35,52 +35,69 @@ async function submitUserMessage(content: string) {
   let textStream = createStreamableValue('');
   let textNode = <BotMessage content={textStream.value} />;
 
-  // Call the custom assistant using the assistant ID and the required beta header
-  const response = await fetch('https://api.openai.com/v2/assistants/asst_skwyet59ADODk1GtpweGMNBO/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-      'OpenAI-Beta': 'assistants=v2',
-    },
-    body: JSON.stringify({
-      messages: aiState.get().messages.map((message: any) => ({
-        role: message.role,
-        content: message.content,
-      })),
-      stream: true,
-    }),
-  });
-
-  if (!response.body) {
-    throw new Error('Response body is null');
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let finalContent = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value, { stream: true });
-    textStream.update(chunk);
-    finalContent += chunk;
-  }
-
-  textStream.done();
-  aiState.done({
-    ...aiState.get(),
-    messages: [
-      ...aiState.get().messages,
-      {
-        id: nanoid(),
-        role: 'assistant',
-        content: finalContent, // Ensure content is a string
+  try {
+    // Call the FastAPI endpoint using the correct API URL
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,  // Ensure your FastAPI handles this if required
+        'Content-Type': 'application/json',
       },
-    ],
-  });
+      body: JSON.stringify({
+        content: content,
+        thread_id: null,  // Or pass an existing thread ID if applicable
+      }),
+    });
+
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      throw new Error(`API Error: ${errorMessage}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let finalContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      textStream.update(chunk);
+      finalContent += chunk;
+    }
+
+    textStream.done();
+    aiState.done({
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'assistant',
+          content: finalContent, // Ensure content is a string
+        },
+      ],
+    });
+
+  } catch (error) {
+    console.error('Failed to fetch AI response:', error);
+    aiState.done({
+      ...aiState.get(),
+      messages: [
+        ...aiState.get().messages,
+        {
+          id: nanoid(),
+          role: 'system',
+          content: 'An error occurred while fetching the response. Please try again later.',
+        },
+      ],
+    });
+  }
 
   return {
     id: nanoid(),
@@ -88,6 +105,7 @@ async function submitUserMessage(content: string) {
   };
 }
 
+// Define the AI state and UI state types
 export type AIState = {
   chatId: string;
   messages: Message[];
@@ -98,6 +116,7 @@ export type UIState = {
   display: React.ReactNode;
 }[];
 
+// Create the AI with the defined state and actions
 export const AI = createAI<AIState, UIState>({
   actions: {
     submitUserMessage,
@@ -117,7 +136,7 @@ export const AI = createAI<AIState, UIState>({
         return uiState;
       }
     } else {
-      return;
+      return [];
     }
   },
   onSetAIState: async ({ state }) => {
@@ -151,6 +170,7 @@ export const AI = createAI<AIState, UIState>({
   },
 });
 
+// Convert AI state to UI state for rendering the chat interface
 export const getUIStateFromAIState = (aiState: Chat) => {
   return aiState.messages
     .filter((message) => message.role !== 'system')
