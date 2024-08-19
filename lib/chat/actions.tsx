@@ -44,6 +44,7 @@ async function submitUserMessage(content: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        role: 'user',
         content: content,
         thread_id: null,  // Or pass an existing thread ID if applicable
       }),
