@@ -136,9 +136,23 @@ async def chat(role: str = Body(...), content: str = Body(...), thread_id: str =
             await asyncio.sleep(1)  # Wait for 1 second before polling again
             run_data = await check_run_status(thread_id, run_data['id'])
         
-        # Retrieve and return the assistant's response
+        # Retrieve and format the assistant's response
         response_data = await get_response_messages(thread_id)
-        return {"thread_id": thread_id, "response": response_data}
+        formatted_response = {
+            "thread_id": thread_id,
+            "messages": []
+        }
+
+        for message in response_data['data']:
+            if message['role'] == 'assistant':
+                for content_item in message['content']:
+                    if content_item['type'] == 'text':
+                        formatted_response['messages'].append({
+                            "role": message['role'],
+                            "text": content_item['text']['value']
+                        })
+
+        return formatted_response
     except Exception as e:
         print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
