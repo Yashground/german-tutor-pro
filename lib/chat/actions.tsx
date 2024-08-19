@@ -5,11 +5,8 @@ import {
   createStreamableUI,
   getMutableAIState,
   getAIState,
-  streamUI,
   createStreamableValue,
 } from 'ai/rsc';
-import { openai } from '@ai-sdk/openai';
-
 import { z } from 'zod';
 import { Chat, Message } from '@/lib/types';
 import { auth } from '@/auth';
@@ -35,54 +32,59 @@ async function submitUserMessage(content: string) {
     ],
   });
 
-  let textStream: undefined | ReturnType<typeof createStreamableValue<string>>;
-  let textNode: undefined | React.ReactNode;
+  let textStream = createStreamableValue('');
+  let textNode = <BotMessage content={textStream.value} />;
 
-  // Call the custom assistant using the assistant ID
-  const result = await streamUI({
-    model: openai('asst_skwyet59ADODk1GtpweGMNBO'), // Replace 'gpt-4o-mini' with your assistant ID
+  // Call the custom assistant using the assistant ID and the required beta header
+  const response = await fetch('https://api.openai.com/v2/assistants/asst_skwyet59ADODk1GtpweGMNBO/completions', {
+    method: 'POST',
     headers: {
-      'OpenAI-Beta': 'assistants=v2', // Add the required beta header
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'assistants=v2',
     },
-    
-    initial: <SpinnerMessage />,
-    messages: [
-      ...aiState.get().messages.map((message: any) => ({
+    body: JSON.stringify({
+      messages: aiState.get().messages.map((message: any) => ({
         role: message.role,
         content: message.content,
-        name: message.name,
       })),
+      stream: true,
+    }),
+  });
+
+  if (!response.body) {
+    throw new Error('Response body is null');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let finalContent = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    textStream.update(chunk);
+    finalContent += chunk;
+  }
+
+  textStream.done();
+  aiState.done({
+    ...aiState.get(),
+    messages: [
+      ...aiState.get().messages,
+      {
+        id: nanoid(),
+        role: 'assistant',
+        content: finalContent, // Ensure content is a string
+      },
     ],
-    text: ({ content, done, delta }) => {
-      if (!textStream) {
-        textStream = createStreamableValue('');
-        textNode = <BotMessage content={textStream.value} />;
-      }
-
-      if (done) {
-        textStream.done();
-        aiState.done({
-          ...aiState.get(),
-          messages: [
-            ...aiState.get().messages,
-            {
-              id: nanoid(),
-              role: 'assistant',
-              content,
-            },
-          ],
-        });
-      } else {
-        textStream.update(delta);
-      }
-
-      return textNode;
-    },
   });
 
   return {
     id: nanoid(),
-    display: result.value,
+    display: textNode,
   };
 }
 
