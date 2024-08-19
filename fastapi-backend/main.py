@@ -17,7 +17,7 @@ def read_root():
 # Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://german-tutor-8wzhvrdo2-yashgrounds-projects.vercel.app"],  # Restrict to your frontend URL
+    allow_origins=["https://german-tutor-pro.vercel.app/"],  # Restrict to your frontend URL
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
