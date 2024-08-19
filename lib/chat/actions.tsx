@@ -41,6 +41,9 @@ async function submitUserMessage(content: string) {
   // Call the custom assistant using the assistant ID
   const result = await streamUI({
     model: openai('asst_skwyet59ADODk1GtpweGMNBO'), // Replace 'gpt-4o-mini' with your assistant ID
+    headers: {
+      'OpenAI-Beta': 'assistants=v2', // Add the required beta header
+    },
     
     initial: <SpinnerMessage />,
     messages: [
