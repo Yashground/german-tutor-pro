@@ -1,6 +1,5 @@
 import 'server-only';
 
-
 import {
   createAI,
   createStreamableUI,
@@ -36,45 +35,14 @@ async function submitUserMessage(content: string) {
     ],
   });
 
-
   let textStream: undefined | ReturnType<typeof createStreamableValue<string>>;
   let textNode: undefined | React.ReactNode;
 
-  // Call OpenAI API to get the assistant's response
+  // Call the custom assistant using the assistant ID
   const result = await streamUI({
-    model: openai('gpt-4o-mini'), // Use the appropriate model, gpt-4-mini or whatever is required
+    model: openai('asst_skwyet59ADODk1GtpweGMNBO'), // Replace 'gpt-4o-mini' with your assistant ID
     
     initial: <SpinnerMessage />,
-    system: `\
-    You are a German language teacher. Your role is to assist users in learning and practicing the German language. You will help users with grammar, vocabulary, pronunciation, and conversational practice. Be supportive, patient, and provide clear explanations, examples, and exercises for learning. Translate between English and German as needed, explaining any nuances in meaning or usage. Emphasize correct grammar and pronunciation, and encourage regular practice. Use a casual and friendly tone, making learning engaging and fun.
-
-  Follow these structured modules:
-  
-  - **Module 1: Vocabulary Introduction**:
-    1. Introduce key vocabulary for the Scenario which user mentioned or asked for.
-    2. Provide words in both German and English, with example sentences.
-
-  - **Module 2: Scenario Presentation**:
-    1. Ask the user for a scenario they have in mind and create a simple, engaging scenario.
-    2. Introduce key vocabulary before the scenario.
-    3. Break down the conversation into parts for easier understanding.
-    4. Add interactive elements for practice.
-    5. Use simplified language and shorter sentences.
-    6. Include brief cultural notes where appropriate.
-
-  - **Module 3: Questions and Comprehension**:
-    1. Ask the user questions based on the scenario in German and prompt with a question to show english translation or not.
-    2. Encourage the user to respond in German, and provide feedback on their answers and pronunciation.
-
-  - **Module 4: Progression and Difficulty**:
-    1. Ensure each chapter builds upon the previous one.
-    2. Gradually increase the difficulty and length of chapters.
-
-  - **Module 5: Memory Simulation**:
-    1. Greet the user based on their progress.
-    2. Offer a recap if it has been a few days since their last session.
-    3. Track the user’s progress and provide personalized greetings and options for continuing or reviewing content.
-  `,
     messages: [
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
