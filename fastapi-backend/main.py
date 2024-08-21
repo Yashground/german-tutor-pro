@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 
 app = FastAPI()
+# Increase the timeout to 60 seconds (or whatever is appropriate)
+TIMEOUT = 60.0
 
 @app.get("/")
 def read_root():
@@ -48,7 +50,7 @@ async def create_thread():
         return data
 
 async def add_message_to_thread(thread_id: str, role: str, content: str):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         response = await client.post(
             f"{BASE_URL}/threads/{thread_id}/messages",
             headers={
@@ -68,7 +70,7 @@ async def add_message_to_thread(thread_id: str, role: str, content: str):
 async def run_thread(thread_id: str):
     print(f"Assistant ID being used: {ASSISTANT_ID}")
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         response = await client.post(
             f"{BASE_URL}/threads/{thread_id}/runs",
             headers={
@@ -100,7 +102,7 @@ async def check_run_status(thread_id: str, run_id: str):
         return response.json()
 
 async def get_response_messages(thread_id: str):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         response = await client.get(
             f"{BASE_URL}/threads/{thread_id}/messages",
             headers={
