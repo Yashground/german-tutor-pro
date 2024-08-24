@@ -37,23 +37,23 @@ export function ChatPanel({
   const exampleMessages = [
     {
       heading: 'What are the',
-      subheading: 'trending memecoins today?',
-      message: `What are the trending memecoins today?`
+      subheading: 'german words for today?',
+      message: `What are the German words for today ?`
     },
     {
-      heading: 'What is the price of',
-      subheading: '$DOGE right now?',
-      message: 'What is the price of $DOGE right now?'
+      heading: 'Let us practice a scenario',
+      subheading: 'today about visiting near by burgerburo',
+      message: 'Let us practice a scenario today about visiting near by burgerburo?'
     },
     {
-      heading: 'I would like to buy',
-      subheading: '42 $DOGE',
-      message: `I would like to buy 42 $DOGE`
+      heading: 'Explain me',
+      subheading: 'Verbs and examples',
+      message: `Explain me some verbs and examples`
     },
     {
-      heading: 'What are some',
-      subheading: `recent events about $DOGE?`,
-      message: `What are some recent events about $DOGE?`
+      heading: 'Let us talk about',
+      subheading: `talking to a restaurant waiter`,
+      message: `Let us talk about what to do once you enter a restaurant`
     }
   ]
 
