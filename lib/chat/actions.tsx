@@ -65,7 +65,8 @@ async function submitUserMessage(content: string) {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let finalContent = '';
+    let rawFinalContent = ''; // Holds raw string data
+    let finalContent = ''; // Holds parsed JSON data
 
     while (true) {
       const { done, value } = await reader.read();
@@ -73,8 +74,10 @@ async function submitUserMessage(content: string) {
 
       const chunk = decoder.decode(value, { stream: true });
       textStream.update(chunk);
-      finalContent += chunk;
+      rawFinalContent += chunk;
     }
+// Parse the accumulated raw content
+finalContent = JSON.parse(rawFinalContent); // Parsing step
 
     textStream.done();
     aiState.done({
@@ -84,7 +87,7 @@ async function submitUserMessage(content: string) {
         {
           id: nanoid(),
           role: 'assistant',
-          content: finalContent, // Ensure content is a string
+          content: finalContent, // Ensure content is a string and using parsed content
         },
       ],
     });
@@ -158,6 +161,7 @@ export const AI = createAI<AIState, UIState>({
 
       const firstMessageContent = messages[0].content as string;
       const title = firstMessageContent.substring(0, 100);
+
 
       const chat: Chat = {
         id: chatId,
