@@ -142,12 +142,16 @@ async def chat(role: str = Body(...), content: str = Body(...), thread_id: str =
             if message['role'] == 'assistant':
                 for content_item in message['content']:
                     if content_item['type'] == 'text':
-                        formatted_response += content_item['text']['value'] + "\n\n"
+                        # Add HTML paragraph tags around the response text
+                        formatted_response += f"<p>{content_item['text']['value']}</p>\n"
 
-        # Remove the trailing line breaks
+        # Remove any trailing whitespace or new lines
         formatted_response = formatted_response.strip()
 
+        # Return the formatted response wrapped in a dictionary
         return {"message": formatted_response}
+    
     except Exception as e:
         print(f"Error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+

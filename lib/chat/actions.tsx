@@ -6,12 +6,16 @@ import {
   getAIState,
   createStreamableValue,
 } from 'ai/rsc';
-import { z } from 'zod';
 import { Chat, Message } from '@/lib/types';
 import { auth } from '@/auth';
 import { saveChat } from '@/app/actions';
 import { SpinnerMessage, UserMessage, BotMessage } from '@/components/stocks/message';
 import { nanoid } from 'nanoid';
+import ReactMarkdown from 'react-markdown';
+
+function MarkdownBotMessage({ content }: { content: string }) {
+  return <ReactMarkdown>{content}</ReactMarkdown>;
+}
 
 // Function to handle submission of a user's message to the FastAPI backend
 async function submitUserMessage(content: string) {
@@ -171,7 +175,6 @@ export const AI = createAI<AIState, UIState>({
   },
 });
 
-// Convert AI state to UI state for rendering the chat interface
 export const getUIStateFromAIState = (aiState: Chat) => {
   return aiState.messages
     .filter((message) => message.role !== 'system')
@@ -182,7 +185,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
           <UserMessage>{message.content as string}</UserMessage>
         ) : message.role === 'assistant' &&
           typeof message.content === 'string' ? (
-          <BotMessage content={message.content} />
+          <MarkdownBotMessage content={message.content} />  // Render content with markdown
         ) : null,
     }));
 };
