@@ -1,3 +1,4 @@
+import ReactMarkdown from 'react-markdown';
 import 'server-only';
 import {
   createAI,
@@ -11,11 +12,6 @@ import { auth } from '@/auth';
 import { saveChat } from '@/app/actions';
 import { SpinnerMessage, UserMessage, BotMessage } from '@/components/stocks/message';
 import { nanoid } from 'nanoid';
-import ReactMarkdown from 'react-markdown';
-
-function MarkdownBotMessage({ content }: { content: string }) {
-  return <ReactMarkdown>{content}</ReactMarkdown>;
-}
 
 // Function to handle submission of a user's message to the FastAPI backend
 async function submitUserMessage(content: string) {
@@ -81,14 +77,21 @@ async function submitUserMessage(content: string) {
     // Parse the accumulated raw content
     try {
       const parsedContent = JSON.parse(rawFinalContent); // Parsing step
-      if (typeof parsedContent === 'object' && 'message' in parsedContent) {
-        finalContent = parsedContent; // Type assertion
+      if (parsedContent && typeof parsedContent === 'object' && 'message' in parsedContent) {
+        finalContent = parsedContent.message; // Access the specific message field
       } else {
         finalContent = rawFinalContent; // Fallback to raw content if parsing doesn't yield expected result
       }
     } catch (error) {
       console.error('Failed to parse JSON:', error);
       finalContent = rawFinalContent; // Fall back to raw content
+    }
+  
+    // Clean the final content before updating the state
+    if (typeof finalContent === 'string') {
+      finalContent = finalContent.replace(/\\n/g, '\n'); // Convert escaped newline characters to actual newlines
+    } else if (finalContent && typeof finalContent === 'object' && 'message' in finalContent) {
+      finalContent.message = finalContent.message.replace(/\\n/g, '\n'); // Convert escaped newline characters within the message field
     }
   
     // Use the finalContent, checking its type
@@ -125,6 +128,7 @@ async function submitUserMessage(content: string) {
     display: textNode,
   };
 }
+
 // Define the AI state and UI state types
 export type AIState = {
   chatId: string;
@@ -174,7 +178,6 @@ export const AI = createAI<AIState, UIState>({
       const firstMessageContent = messages[0].content as string;
       const title = firstMessageContent.substring(0, 100);
 
-
       const chat: Chat = {
         id: chatId,
         title,
@@ -190,6 +193,10 @@ export const AI = createAI<AIState, UIState>({
     }
   },
 });
+
+function MarkdownBotMessage({ content }: { content: string }) {
+  return <ReactMarkdown>{content.trim()}</ReactMarkdown>; // Trim to remove any leading/trailing whitespace
+}
 
 export const getUIStateFromAIState = (aiState: Chat) => {
   return aiState.messages
