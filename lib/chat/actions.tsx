@@ -77,24 +77,13 @@ async function submitUserMessage(content: string) {
     // Parse the accumulated raw content
     try {
       const parsedContent = JSON.parse(rawFinalContent); // Parsing step
-      if (parsedContent && typeof parsedContent === 'object' && 'message' in parsedContent) {
-        finalContent = parsedContent.message; // Access the specific message field
-      } else {
-        finalContent = rawFinalContent; // Fallback to raw content if parsing doesn't yield expected result
-      }
+      finalContent = processContent(parsedContent);
     } catch (error) {
       console.error('Failed to parse JSON:', error);
-      finalContent = rawFinalContent; // Fall back to raw content
+      finalContent = processContent(rawFinalContent);
     }
   
-    // Clean the final content before updating the state
-    if (typeof finalContent === 'string') {
-      finalContent = finalContent.replace(/\\n/g, '\n'); // Convert escaped newline characters to actual newlines
-    } else if (finalContent && typeof finalContent === 'object' && 'message' in finalContent) {
-      finalContent.message = finalContent.message.replace(/\\n/g, '\n'); // Convert escaped newline characters within the message field
-    }
-  
-    // Use the finalContent, checking its type
+    // Now update the state with finalContent
     textStream.done();
     aiState.done({
       ...aiState.get(),
@@ -103,7 +92,7 @@ async function submitUserMessage(content: string) {
         {
           id: nanoid(),
           role: 'assistant',
-          content: typeof finalContent === 'string' ? finalContent : finalContent.message, // Ensure content is a string
+          content: finalContent, // Directly use the processed content
         },
       ],
     });
@@ -127,6 +116,17 @@ async function submitUserMessage(content: string) {
     id: nanoid(),
     display: textNode,
   };
+}
+
+// Utility function to process the content and extract the message string
+function processContent(rawContent: string | { message: string }): string {
+  if (typeof rawContent === 'string') {
+    return rawContent.replace(/\\n/g, '\n'); // Convert escaped newlines
+  } else if (rawContent && typeof rawContent === 'object' && 'message' in rawContent) {
+    return rawContent.message.replace(/\\n/g, '\n'); // Convert escaped newlines in message field
+  } else {
+    return ''; // Fallback if the content isn't in an expected format
+  }
 }
 
 // Define the AI state and UI state types
