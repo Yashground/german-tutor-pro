@@ -121,11 +121,9 @@ async function submitUserMessage(content: string) {
 // Utility function to process the content and extract the message string
 function processContent(rawContent: string | { message: string }): string {
   if (typeof rawContent === 'string') {
-    return rawContent.replace(/\\n/g, '\n'); // Convert escaped newlines to actual newlines
+    return rawContent.replace(/\\n/g, '\n').replace(/\n/g, '<br/>'); // Convert escaped newlines to actual newlines, and then replace with <br/> tags
   } else if (rawContent && typeof rawContent === 'object' && 'message' in rawContent) {
-    return rawContent.message
-      .replace(/\\n/g, '\n')      // Convert escaped newlines to actual newlines
-      .replace(/\n/g, '<br/>');   // Replace newlines with <br/> for HTML rendering
+    return rawContent.message.replace(/\\n/g, '\n').replace(/\n/g, '<br/>'); // Convert escaped newlines to <br/>
   } else {
     return ''; // Fallback if the content isn't in an expected format
   }
@@ -201,12 +199,11 @@ function MarkdownBotMessage({ content }: { content: string }) {
   return (
     <div
       dangerouslySetInnerHTML={{
-        __html: content,
+        __html: content, // Render the processed content as HTML
       }}
     />
   );
 }
-
 export const getUIStateFromAIState = (aiState: Chat) => {
   return aiState.messages
     .filter((message) => message.role !== 'system')
