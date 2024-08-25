@@ -194,8 +194,15 @@ export const AI = createAI<AIState, UIState>({
   },
 });
 
+// Modified MarkdownBotMessage to use dangerouslySetInnerHTML
 function MarkdownBotMessage({ content }: { content: string }) {
-  return <ReactMarkdown>{content.trim()}</ReactMarkdown>; // Trim to remove any leading/trailing whitespace
+  return (
+    <div
+      dangerouslySetInnerHTML={{
+        __html: content,
+      }}
+    />
+  );
 }
 
 export const getUIStateFromAIState = (aiState: Chat) => {
@@ -208,7 +215,7 @@ export const getUIStateFromAIState = (aiState: Chat) => {
           <UserMessage>{message.content as string}</UserMessage>
         ) : message.role === 'assistant' &&
           typeof message.content === 'string' ? (
-          <MarkdownBotMessage content={message.content} />  // Render content with markdown
+          <MarkdownBotMessage content={message.content} />  // Render content with HTML
         ) : null,
     }));
 };
