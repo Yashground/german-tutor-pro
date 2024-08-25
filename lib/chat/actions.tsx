@@ -53,32 +53,45 @@ async function submitUserMessage(content: string) {
         thread_id: null,  // Or pass an existing thread ID if applicable
       }),
     });
-
+  
     if (!response.ok) {
       const errorMessage = await response.text();
       throw new Error(`API Error: ${errorMessage}`);
     }
-
+  
     if (!response.body) {
       throw new Error('Response body is null');
     }
-
+  
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
+  
     let rawFinalContent = ''; // Holds raw string data
-    let finalContent = ''; // Holds parsed JSON data
-
+    let finalContent: string | { message: string }; // Holds parsed JSON data or a string
+  
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
+  
       const chunk = decoder.decode(value, { stream: true });
       textStream.update(chunk);
       rawFinalContent += chunk;
     }
-// Parse the accumulated raw content
-finalContent = JSON.parse(rawFinalContent); // Parsing step
-
+  
+    // Parse the accumulated raw content
+    try {
+      const parsedContent = JSON.parse(rawFinalContent); // Parsing step
+      if (typeof parsedContent === 'object' && 'message' in parsedContent) {
+        finalContent = parsedContent; // Type assertion
+      } else {
+        finalContent = rawFinalContent; // Fallback to raw content if parsing doesn't yield expected result
+      }
+    } catch (error) {
+      console.error('Failed to parse JSON:', error);
+      finalContent = rawFinalContent; // Fall back to raw content
+    }
+  
+    // Use the finalContent, checking its type
     textStream.done();
     aiState.done({
       ...aiState.get(),
@@ -87,11 +100,11 @@ finalContent = JSON.parse(rawFinalContent); // Parsing step
         {
           id: nanoid(),
           role: 'assistant',
-          content: finalContent, // Ensure content is a string and using parsed content
+          content: typeof finalContent === 'string' ? finalContent : finalContent.message, // Ensure content is a string
         },
       ],
     });
-
+  
   } catch (error) {
     console.error('Failed to fetch AI response:', error);
     aiState.done({
@@ -106,13 +119,12 @@ finalContent = JSON.parse(rawFinalContent); // Parsing step
       ],
     });
   }
-
+  
   return {
     id: nanoid(),
     display: textNode,
   };
 }
-
 // Define the AI state and UI state types
 export type AIState = {
   chatId: string;
