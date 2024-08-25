@@ -18,8 +18,9 @@ async function submitUserMessage(content: string) {
   'use server';
 
   const aiState = getMutableAIState<typeof AI>();
+  let isComplete = false;
 
-  // Add the user's message to the current chat state
+  // Set a loading state
   aiState.update({
     ...aiState.get(),
     messages: [
@@ -29,11 +30,15 @@ async function submitUserMessage(content: string) {
         role: 'user',
         content,
       },
+      {
+        id: nanoid(),
+        role: 'system',
+        content: 'Loading...',  // Placeholder content while loading
+      },
     ],
   });
 
-  let textStream = createStreamableValue('');
-  let textNode = <BotMessage content={textStream.value} />;
+  let rawFinalContent = '';
 
   try {
     // Call the FastAPI endpoint using the correct API URL
@@ -49,54 +54,38 @@ async function submitUserMessage(content: string) {
         thread_id: null,  // Or pass an existing thread ID if applicable
       }),
     });
-  
+
     if (!response.ok) {
       const errorMessage = await response.text();
       throw new Error(`API Error: ${errorMessage}`);
     }
-  
+
     if (!response.body) {
       throw new Error('Response body is null');
     }
-  
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-  
-    let rawFinalContent = ''; // Holds raw string data
-    let finalContent: string | { message: string }; // Holds parsed JSON data or a string
-  
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-  
+
       const chunk = decoder.decode(value, { stream: true });
-      textStream.update(chunk);
       rawFinalContent += chunk;
     }
-  
-    // Parse the accumulated raw content
-    try {
-      const parsedContent = JSON.parse(rawFinalContent); // Parsing step
-      finalContent = processContent(parsedContent);
-    } catch (error) {
-      console.error('Failed to parse JSON:', error);
-      finalContent = processContent(rawFinalContent);
-    }
-  
-    // Now update the state with finalContent
-    textStream.done();
+
+    const finalContent = processContent(JSON.parse(rawFinalContent));
+    isComplete = true;
+
+    // Update with the final content
     aiState.done({
       ...aiState.get(),
-      messages: [
-        ...aiState.get().messages,
-        {
-          id: nanoid(),
-          role: 'assistant',
-          content: finalContent, // Directly use the processed content
-        },
-      ],
+      messages: aiState.get().messages.map(msg => 
+        msg.role === 'system' && msg.content === 'Loading...' ? { ...msg, content: finalContent } : msg
+      ),
     });
-  
+
   } catch (error) {
     console.error('Failed to fetch AI response:', error);
     aiState.done({
@@ -111,11 +100,6 @@ async function submitUserMessage(content: string) {
       ],
     });
   }
-  
-  return {
-    id: nanoid(),
-    display: textNode,
-  };
 }
 
 // Utility function to process the content and extract the message string
@@ -127,6 +111,16 @@ function processContent(rawContent: string | { message: string }): string {
   } else {
     return ''; // Fallback if the content isn't in an expected format
   }
+}
+
+function MarkdownBotMessage({ content }: { content: string }) {
+  return (
+    <div
+      dangerouslySetInnerHTML={{
+        __html: content, // Render the processed content as HTML
+      }}
+    />
+  );
 }
 
 // Define the AI state and UI state types
@@ -194,16 +188,6 @@ export const AI = createAI<AIState, UIState>({
   },
 });
 
-// Modified MarkdownBotMessage to use dangerouslySetInnerHTML
-function MarkdownBotMessage({ content }: { content: string }) {
-  return (
-    <div
-      dangerouslySetInnerHTML={{
-        __html: content, // Render the processed content as HTML
-      }}
-    />
-  );
-}
 export const getUIStateFromAIState = (aiState: Chat) => {
   return aiState.messages
     .filter((message) => message.role !== 'system')
