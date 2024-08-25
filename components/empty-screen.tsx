@@ -12,7 +12,7 @@ export function EmptyScreen() {
           Welcome to German Tutor Pro assistant !
         </h1>
         <p className="leading-normal text-muted-foreground">
-          This is an assistant for you to learn German language and it's built on Next.js and Vercel AI SDK{' '}
+          This is an assistant for you to learn German language and it is built on Next.js and Vercel AI SDK{' '}
           <ExternalLink href="https://nextjs.org">Next.js</ExternalLink>, the{' '}
           <ExternalLink href="https://sdk.vercel.ai">
             Vercel AI SDK
